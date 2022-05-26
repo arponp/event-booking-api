@@ -5,6 +5,16 @@ import { buildSchema } from "graphql";
 
 const app = express();
 
+interface Event {
+  _id: String;
+  title: String;
+  description: String;
+  price: Number;
+  date: String;
+}
+
+const events: Event[] = [];
+
 app.use(bodyParser.json());
 
 app.use(
@@ -25,7 +35,7 @@ app.use(
           date: String!
         }
         type RootQuery {
-            events: [String!]!
+            events: [Event!]!
         }
         type RootMutation {
             createEvent(eventInput: EventInput): Event
@@ -37,11 +47,25 @@ app.use(
     `),
     rootValue: {
       events: () => {
-        return ["Cooking", "Sailing", "Coding"];
+        return events;
       },
-      createEvent: (args: { name: String }) => {
-        const eventName = args.name;
-        return eventName;
+      createEvent: (args: {
+        eventInput: {
+          title: String;
+          description: String;
+          price: Number;
+          date: String;
+        };
+      }) => {
+        const event: Event = {
+          _id: Math.random().toString(),
+          title: args.eventInput.title,
+          description: args.eventInput.description,
+          price: args.eventInput.price,
+          date: args.eventInput.date,
+        };
+        events.push(event);
+        return event;
       },
     },
     graphiql: true,
