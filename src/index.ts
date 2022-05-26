@@ -1,7 +1,9 @@
+import "dotenv/config";
 import bodyParser from "body-parser";
 import express from "express";
 import { graphqlHTTP } from "express-graphql";
 import { buildSchema } from "graphql";
+import mongoose from "mongoose";
 
 const app = express();
 
@@ -61,7 +63,7 @@ app.use(
           _id: Math.random().toString(),
           title: args.eventInput.title,
           description: args.eventInput.description,
-          price: args.eventInput.price,
+          price: +args.eventInput.price,
           date: args.eventInput.date,
         };
         events.push(event);
@@ -72,4 +74,13 @@ app.use(
   })
 );
 
-app.listen(3000, () => console.log("Server Live"));
+mongoose
+  .connect(
+    `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.ioed6.mongodb.net/?retryWrites=true&w=majority`
+  )
+  .then(() => {
+    app.listen(3000, () => console.log("Server live"));
+  })
+  .catch((err) => {
+    console.log(err.message);
+  });
