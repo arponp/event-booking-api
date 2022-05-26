@@ -4,18 +4,9 @@ import express from "express";
 import { graphqlHTTP } from "express-graphql";
 import { buildSchema } from "graphql";
 import mongoose from "mongoose";
+import EventModel from "./models/event";
 
 const app = express();
-
-interface Event {
-  _id: String;
-  title: String;
-  description: String;
-  price: Number;
-  date: String;
-}
-
-const events: Event[] = [];
 
 app.use(bodyParser.json());
 
@@ -48,26 +39,31 @@ app.use(
         }
     `),
     rootValue: {
-      events: () => {
-        return events;
-      },
-      createEvent: (args: {
+      events: () => {},
+      createEvent: async (args: {
         eventInput: {
-          title: String;
-          description: String;
-          price: Number;
-          date: String;
+          title: string;
+          description: string;
+          price: number;
+          date: string;
         };
       }) => {
-        const event: Event = {
-          _id: Math.random().toString(),
-          title: args.eventInput.title,
-          description: args.eventInput.description,
-          price: +args.eventInput.price,
-          date: args.eventInput.date,
-        };
-        events.push(event);
-        return event;
+        try {
+          const event = new EventModel({
+            title: args.eventInput.title,
+            description: args.eventInput.description,
+            price: +args.eventInput.price,
+            date: new Date(args.eventInput.date),
+          });
+          const result = await event.save();
+          console.log(result);
+          return { ...result._doc };
+        } catch (e: unknown) {
+          if (e instanceof Error) {
+            throw e;
+          }
+          return null;
+        }
       },
     },
     graphiql: true,
@@ -76,7 +72,7 @@ app.use(
 
 mongoose
   .connect(
-    `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.ioed6.mongodb.net/?retryWrites=true&w=majority`
+    `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.ioed6.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`
   )
   .then(() => {
     app.listen(3000, () => console.log("Server live"));
