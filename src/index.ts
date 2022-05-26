@@ -11,6 +11,12 @@ app.use(
   "/graphql",
   graphqlHTTP({
     schema: buildSchema(`
+        type Event {
+          _id: ID!
+          description: String!
+          price: Float!
+          date: String!
+        }
         type RootQuery {
             events: [String!]!
         }
