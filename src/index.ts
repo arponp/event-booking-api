@@ -41,8 +41,7 @@ app.use(
     rootValue: {
       events: async () => {
         try {
-          const results = await EventModel.find({});
-          return results;
+          return await EventModel.find().lean();
         } catch (e: unknown) {
           if (e instanceof Error) {
             throw e;
