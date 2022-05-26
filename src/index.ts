@@ -39,7 +39,17 @@ app.use(
         }
     `),
     rootValue: {
-      events: () => {},
+      events: async () => {
+        try {
+          const results = await EventModel.find({});
+          return results;
+        } catch (e: unknown) {
+          if (e instanceof Error) {
+            throw e;
+          }
+          return null;
+        }
+      },
       createEvent: async (args: {
         eventInput: {
           title: string;
@@ -56,7 +66,6 @@ app.use(
             date: new Date(args.eventInput.date),
           });
           const result = await event.save();
-          console.log(result);
           return { ...result._doc };
         } catch (e: unknown) {
           if (e instanceof Error) {
