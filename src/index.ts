@@ -5,6 +5,8 @@ import { graphqlHTTP } from "express-graphql";
 import { buildSchema } from "graphql";
 import mongoose from "mongoose";
 import EventModel from "./models/event";
+import UserModel from "./models/user";
+import bcrypt from "bcryptjs";
 
 const app = express();
 
@@ -21,6 +23,16 @@ app.use(
           price: Float!
           date: String!
         }
+        type User {
+          _id: ID!
+          email: String!
+          password: String
+          createdEvents: [ID!]!
+        }
+        input UserInput {
+          email: String!
+          password: String!
+        }
         input EventInput {
           title: String!
           description: String!
@@ -32,6 +44,7 @@ app.use(
         }
         type RootMutation {
             createEvent(eventInput: EventInput): Event
+            createUser(userInput: UserInput): User
         }
         schema {
             query: RootQuery 
@@ -42,6 +55,31 @@ app.use(
       events: async () => {
         try {
           return await EventModel.find().lean();
+        } catch (e: unknown) {
+          if (e instanceof Error) {
+            throw e;
+          }
+          return null;
+        }
+      },
+      createUser: async (args: {
+        userInput: { email: string; password: string };
+      }) => {
+        try {
+          const isUser = await UserModel.findOne({
+            email: args.userInput.email,
+          });
+          if (isUser) {
+            throw new Error("User exists already");
+          }
+          const hashPass = await bcrypt.hash(args.userInput.password, 12);
+          const user = new UserModel({
+            email: args.userInput.email,
+            password: hashPass,
+            createdEvents: [],
+          });
+          const result = await user.save();
+          return { ...result._doc, password: null, _id: result.id };
         } catch (e: unknown) {
           if (e instanceof Error) {
             throw e;
@@ -63,8 +101,15 @@ app.use(
             description: args.eventInput.description,
             price: +args.eventInput.price,
             date: new Date(args.eventInput.date),
+            creator: "6292754b2a10009eeb01ab3a",
           });
           const result = await event.save();
+          const user = await UserModel.findById("6292754b2a10009eeb01ab3a");
+          if (!user) {
+            throw new Error("User not found");
+          }
+          user.createdEvents.push(event);
+          await user.save();
           return { ...result._doc };
         } catch (e: unknown) {
           if (e instanceof Error) {
